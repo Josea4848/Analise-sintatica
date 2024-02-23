@@ -1,34 +1,81 @@
 class Token:
-  def __init__(self, token, tipo) -> None:
+  def __init__(self, token, tipo, linha) -> None:
     self.token = token
     self.tipo = tipo
+    self.linha = linha
 
 class Sintatico:
   def __init__(self, listTokens):
     self.tokens = listTokens
     self.posicao = 0
-    self.erro = False
+    self.erros = list()
     self.token = tokens[0]
 
+  #Avança token
   def next(self):
-    self.posicao += 1
-    self.token = tokens[self.posicao]
+    if(self.posicao + 1 < len(self.tokens)):
+      self.posicao += 1
+      self.token = tokens[self.posicao]
 
+  #program inicia e terminará a análise
   def program(self):
     if self.token.token == "program":
       self.next()  
       if self.token.tipo == "id":
         self.next()
         if self.token.token == ";":
-          print("program id;")
+          self.next()
+          self.declaracao_variaveis()
+
+          #if self.token.token != ".":
+            #self.erro = True
         else:
-          self.erro = True     
+          self.erros.append(f"[{self.token.linha}] ; missing")
       else:
-        self.erro = True      
+        self.erros.append(f"[{self.token.linha}] ID inválido")
     else:
-      self.erro = True     
+      self.erros.append(f"[{self.token.linha}] Inicializador program não encontrado")     
 
+  #bloco de declaração de variáveis
+  def declaracao_variaveis(self):
+    if(self.token.token == "var"):
+      self.next()
+      self.lista_declaracao_variaveis()
+    #token ->  ε
+    else:
+      pass
+    
+  def lista_declaracao_variaveis(self):
+    self.lista_indentificadores()
+    if self.token.token == ":":
+      self.next()
+      self.tipo()
+      
+      if self.token.token != ";":
+        self.erros.append(f"; missing")
+      else:
+        self.next()
 
+      if self.token.tipo == "id":
+        self.lista_declaracao_variaveis()
+    else:
+      self.erros.append(f"[{self.token.linha}] : missing")
+    
+  def lista_indentificadores(self):
+    if self.token.tipo == "id":
+      self.next()
+      if self.token.token == ",":
+        self.next()
+        self.lista_indentificadores()
+    else:
+      self.erros.append(f"[{self.token.linha}] id inválido")
+  
+  def tipo(self):
+    if(self.token.token in ['real','integer','boolean']):
+      self.next()
+    else:
+      self.erros.append("Tipo inválido")
+      self.next()
 
 #Leitura dos tokens -> token | tipo
 tokensFile = open("tabela2.csv", "r")
@@ -41,13 +88,11 @@ tokens = list()
 #Adiciona tokens ao dicionário
 for line in lines:
   line = line.split(" ")
-  tokens.append(Token(line[0], line[1]))
-
-
-for token in tokens:
-  print(f"{token.token} {token.tipo}")
-
+  tokens.append(Token(line[0], line[1], line[2].replace("\n","")))
 
 
 app = Sintatico(tokens)
 app.program()
+
+#verifica erro
+print(app.erros)
