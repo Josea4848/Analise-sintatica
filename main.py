@@ -38,7 +38,7 @@ class Sintatico:
 
   #bloco de declaração de variáveis
   def declaracao_variaveis(self):
-    if(self.token.token == "var"):
+    if(self.token.token == "var"): #esse if impede e volta pra program
       self.next()
       self.lista_declaracao_variaveis()
     #token ->  ε
@@ -64,11 +64,23 @@ class Sintatico:
   def lista_indentificadores(self):
     if self.token.tipo == "id":
       self.next()
-      if self.token.token == ",":
-        self.next()
-        self.lista_indentificadores()
+      self.lista_indentificadores2()
+
     else:
       self.erros.append(f"[{self.token.linha}] id inválido")
+
+  def lista_indentificadores2(self): #,id(ldi')/ ε
+    if self.token.token == ",":
+      self.next()
+      #se espera um id
+      if(self.token.tipo == "id"):
+        self.next()
+        self.lista_indentificadores2()
+      else:
+        self.erros.append("ID inválido")
+
+    else:
+      pass
   
   def tipo(self):
     if(self.token.token in ['real','integer','boolean']):
