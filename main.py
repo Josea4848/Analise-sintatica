@@ -26,6 +26,7 @@ class Sintatico:
         if self.token.token == ";":
           self.next()
           self.declaracao_variaveis()
+          self.declaracao_de_subprogramas()
 
           #if self.token.token != ".":
             #self.erro = True
@@ -59,7 +60,7 @@ class Sintatico:
       if self.token.tipo == "id":
         self.lista_declaracao_variaveis()
     else:
-      self.erros.append(f"[{self.token.linha}] : missing")
+      self.erros.append(f"[{self.token.linha}] : expected")
     
   def lista_indentificadores(self):
     if self.token.tipo == "id":
@@ -67,7 +68,7 @@ class Sintatico:
       self.lista_indentificadores2()
 
     else:
-      self.erros.append(f"[{self.token.linha}] id inválido")
+      self.erros.append(f"[{self.token.linha}] id inválido {self.token.token}")
 
   def lista_indentificadores2(self): #,id(ldi')/ ε
     if self.token.token == ",":
@@ -89,6 +90,95 @@ class Sintatico:
       self.erros.append("Tipo inválido")
       self.next()
 
+  def declaracao_de_subprogramas(self): #D_SUBPROGMS
+    if self.token.token == "procedure":
+      self.next()
+      self.declaracao_de_subprograma()
+      self.declaracao_de_subprogramas2()
+    else:
+      pass
+  
+  def declaracao_de_subprogramas2(self): #D_SUBPROGMS'
+    if(self.token.token == "procedure"):
+      self.next()
+      self.declaracao_de_subprograma()
+      self.declaracao_de_subprogramas2()
+    else:
+      pass
+
+  def declaracao_de_subprograma(self): #d_subprgm
+    if self.token.tipo == "id":
+      self.next()
+      self.argumentos()
+      if self.token.token == ";":
+        self.next()
+      else:
+        self.erros.append("; missing")
+
+      self.declaracao_variaveis()
+      self.declaracao_de_subprograma()
+
+    else:
+      self.erros.append("ID inválido")
+
+  def argumentos(self):
+
+    if self.token.token == "(":
+      self.next()
+      self.lista_de_parametros()
+
+      if self.token.token == ")":
+        self.next()
+      else:
+        self.erros.append(") expected")
+
+    else:
+      pass
+
+  def lista_de_parametros(self):
+    self.lista_indentificadores()
+    if(self.token.token == ":" or self.token.token == ";"):
+      if self.token.token == ";":
+          self.erros.append("; is not :")
+      
+      self.next()
+      
+    else:
+      self.erros.append(": expected")
+    
+    self.tipo()
+    self.lista_de_parametros2()
+
+  
+  def lista_de_parametros2(self):
+    if self.token.token == ";":
+      self.next()
+      self.lista_indentificadores()
+
+      if(self.token.token == ":"):
+        self.next()
+        
+      else:
+        self.erros.append(": expected")  
+
+      self.tipo()
+
+      self.lista_indentificadores2()
+
+    else:
+      pass
+
+  def comando_composto(self):
+    if self.token.token == "begin":
+      pass
+    else:
+      self.erros.append("begin expected")
+
+  def comandos_opcionais(self):
+    pass
+  
+  def lista_de_comandos(self):
+    pass
 #Leitura dos tokens -> token | tipo
 tokensFile = open("tabela2.csv", "r")
 lines = tokensFile.readlines()
