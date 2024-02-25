@@ -27,7 +27,6 @@ class Sintatico:
           self.next()
           self.declaracao_variaveis()
           self.declaracao_de_subprogramas()
-          #sleep(5000)
           self.comando_composto()
           if self.token.tipo == "nls":
             self.erros.append(f"'{self.token.token}' unrecognized language symbol, line {self.token.linha}\nCompilation aborted!")
@@ -97,35 +96,28 @@ class Sintatico:
     if self.token.token == "procedure":
       self.next()
       self.declaracao_de_subprograma()
-      self.declaracao_de_subprogramas2()
-    else:
-      pass
-  
-  def declaracao_de_subprogramas2(self): #D_SUBPROGMS'
-    if(self.token.token == "procedure"):
-      self.next()
-      self.declaracao_de_subprograma()
-      self.declaracao_de_subprogramas2()
-    else:
-      pass
+      if self.token.token == ";":
+        self.next()
+      elif self.token.tipo != "nls":
+        self.erros.append(f"; missing, line {self.tokens[self.posicao-1].linha}")
+      self.declaracao_de_subprogramas()
 
   def declaracao_de_subprograma(self): #d_subprgm
     if self.token.tipo == "id":
       self.next()
-      self.argumentos()
-      if self.token.token == ";":
-        self.next()
-      elif self.token.tipo != "nls":
-        self.erros.append(f"; missing, line {self.tokens[self.posicao - 1].linha}")
+    else:
+      self.erros.append(f"ID inválido, {self.token.token}")
+    self.argumentos()
+    if self.token.token == ";":
+      self.next()
+    else:
+      self.erros.append(f"; missing, line {self.tokens[self.posicao].linha}")
 
-      self.declaracao_variaveis()
-      self.comando_composto()
-      self.declaracao_de_subprogramas()
-      
 
-    elif self.token.tipo != "nls":
-      self.erros.append(f"ID inválido {self.token.token}")
-
+    self.declaracao_variaveis()
+    self.declaracao_de_subprogramas()
+    self.comando_composto()
+    
   def argumentos(self):
     if self.token.token == "(":
       self.next()
@@ -183,8 +175,7 @@ class Sintatico:
       elif self.token.tipo != "nls":
         self.erros.append(f"Expected end, line {self.token.linha}")
     elif self.token.tipo != "nls":
-      print(f"{self.token.token}")
-      self.erros.append(f"begin expected {self.token.linha}")
+      self.erros.append(f"begin expected {self.token.linha}, but started with {self.token.token}")
 
   def comandos_opcionais(self):
     self.lista_de_comandos()
@@ -195,7 +186,7 @@ class Sintatico:
 
 
   def lista_de_comandos2(self):
-    if self.token.token in ['(','if','while'] or self.token.tipo == "id":
+    if self.token.token in ['(','if','while','for'] or self.token.tipo == "id":
       self.comando()
       self.lista_de_comandos2()
 
@@ -221,19 +212,8 @@ class Sintatico:
 
     elif self.token.token == "if":
       self.next()
-      if self.token.token == "(":
-        self.next()
-        self.expressao()
-        if self.token.token == ")":
-          self.next()
-        elif self.token.tipo != "nls":
-          self.erros.append(f") expected {self.tokens[self.posicao - 1].linha}")
-      else:
-        self.expressao()
-
-        if self.token.token == ")":
-          self.erros.append(f"( expected, line {self.token.linha}")
-          self.next()
+      
+      self.expressao()
 
       if self.token.token == "then":
         self.next()
@@ -251,24 +231,14 @@ class Sintatico:
     elif self.token.token == "while":
       self.next()
       #while()
-      if self.token.token == "(":
-        self.next()
-        self.expressao()
-        if self.token.token == ")":
-          self.next()
-        elif self.token.tipo != "nls":
-          self.erros.append(f") expected, line {self.tokens[self.tokens.posicao-1].linha}")
-      else:
-        self.expressao()
-        if self.token.token == ")":
-          self.erros.append(f"( expected, line {self.token.linha}")
-          self.next()
-
+      self.expressao()
+      
       if self.token.token == "do":
         self.next()
       elif self.token.tipo != "nls":
         self.erros.append("Expected 'do' keyword")
       
+
       if self.token.token == "begin":
         self.comando_composto()
       else:
@@ -276,6 +246,57 @@ class Sintatico:
 
       #recursão novamente
       self.comando()
+    
+    #for
+    elif self.token.token == "for":
+      self.next()
+      #mesmo se estiver errado (keyword) ele entra, pois pode ter escrito errado
+      if self.token.tipo in ["id","keyword"]:
+        if self.token.tipo == "keyword":
+          self.erros.append(f"{self.token.token} is a keyword")
+        self.next()
+      
+      #se não for id, keyword ou um símbolo não pertencente a linguagem
+      elif self.token.tipo != "nls":
+        self.erros.append("Identifier expected")
+      
+      #espera-se :=
+      if self.token.token == ":=":
+        self.next()
+      elif self.token.tipo != "nls":
+        self.erros.append(f":= expected, line {self.token.linha}")
+
+      #espera-se number integer
+      if self.token.tipo in ["integer", "real"]:
+        if self.token.tipo == "real":
+          self.erros.append(f"real number in for, line {self.token.linha}")
+        self.next()
+      
+      elif self.token.tipo != "nls":
+        self.erros.append(f"invalid integer, line {self.token.linha}")
+
+      #espera-se to
+      if self.token.token == "to":
+        self.next()
+      elif self.token.tipo != "nls":
+        self.erros.append(f"expected 'to' keyword, line {self.token.linha}")
+
+      #espera-se number integer
+      if self.token.tipo in ["integer", "real"]:
+        if self.token.tipo == "real":
+          self.erros.append(f"real number in for, line {self.token.linha}")
+        self.next()
+      
+      elif self.token.tipo != "nls":
+        self.erros.append(f"invalid integer, line {self.token.linha}")
+
+      #espera-se do
+      if self.token.token == "do":
+        self.next()
+      elif self.token.tipo != "nls":
+        self.erros.append(f"expected 'do' keyword, line {self.token.linha}")
+
+      self.comando_composto()
 
     else:
       pass
@@ -306,6 +327,9 @@ class Sintatico:
       self.expressao_simples()
 
   def expressao_simples(self):
+    if self.token.token in "+-":
+      self.next()
+    
     self.termo()
     self.expressao_simples2()
 
@@ -322,7 +346,7 @@ class Sintatico:
     self.termo2()
 
   def termo2(self):
-    if self.token.token in "*/":
+    if self.token.token in ["*","/","and"]:
       self.next()
       self.fator()
       self.termo2()
@@ -341,7 +365,7 @@ class Sintatico:
     #real, inteiro, true ou false
     elif self.token.tipo in ["real", "integer", "bool"]:
       self.next()      
-    
+
     #id
     elif self.token.tipo == "id":
       self.next()
@@ -359,7 +383,7 @@ class Sintatico:
       self.fator()
 
     else:
-      self.erros.append("Valor inválido")
+      self.erros.append(f"{self.token.token} Valor inválido")
       self.next()
 
   def parte_else(self):
@@ -389,7 +413,8 @@ app = Sintatico(tokens)
 app.program()
 
 #verifica erro
-for erro in app.erros:
-  print(f'\033[31m"{erro}"\033[m')
-
-app.fator()
+if len(app.erros):
+  for erro in app.erros:
+    print(f'\033[31m"{erro}"\033[m')
+else:
+  print("A análise sintática não encontrou erros!")

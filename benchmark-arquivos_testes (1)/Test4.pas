@@ -13,6 +13,13 @@ begin
       B := B-1;
       R := A + B;
       I := I + 1;
+
+      for I := 1 to 5 do
+   begin
+      A := A * A;
+      B := B * A;
+      R := A + B
+   end
    end
 end.
 
