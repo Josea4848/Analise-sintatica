@@ -194,7 +194,8 @@ class Sintatico:
     #se lê ID
     if self.token.tipo == "id":
       self.next()
-
+      self.ativacao_de_procedimento()
+    
       if self.token.token == ":=":
         self.next() 
         self.expressao()
@@ -202,13 +203,13 @@ class Sintatico:
           self.next()
         elif self.token.tipo != "nls":
           self.erros.append(f"; missing, line {self.tokens[self.posicao - 1].linha}")
-      
-      elif self.token.token == "(":
-        self.next()
-        self.ativacao_de_procedimento()
 
-      elif self.token.token != ";":
+      elif self.token.token == ";":
+        self.next()
+
+      elif self.token.tipo != "nls":
         self.erros.append(f"assignment error or procedure call after {self.tokens[self.posicao-1].token}, line {self.tokens[self.posicao-1].linha}")
+      
 
     elif self.token.token == "if":
       self.next()
@@ -303,11 +304,18 @@ class Sintatico:
 
 
   def ativacao_de_procedimento(self):
-    self.lista_de_expressoes()
-    if self.token.token == ")":
+    if self.token.token == "(":
       self.next()
-    else:
-      self.erros.append(f") expected, {self.token.linha}")
+      #se já estiver fechando parênteses ele não entra em lista_de_expressoes
+      if self.token.token == ")":
+        self.next()
+      else:
+        self.lista_de_expressoes()
+      
+        if self.token.token == ")":
+          self.next()
+        else:
+          self.erros.append(f") expected, {self.tokens[self.posicao-1].linha}")
   
   def lista_de_expressoes(self):
     self.expressao()
@@ -371,11 +379,17 @@ class Sintatico:
       self.next()
       #id(expressão)
       if self.token.token == "(":
-        self.lista_de_expressoes()
+        self.next()
+
+        #se já estiver fechando parênteses ele não entra em lista_de_expressoes
         if self.token.token == ")":
           self.next()
         else:
-          self.erros.append(") expected")
+          self.lista_de_expressoes()
+          if self.token.token == ")":
+            self.next()
+          else:
+            self.erros.append(") expected")
 
     #not fator
     elif self.token.token == "not":
@@ -383,7 +397,7 @@ class Sintatico:
       self.fator()
 
     else:
-      self.erros.append(f"{self.token.token} Valor inválido")
+      self.erros.append(f"{self.token.token} Valor inválido, line {self.token.linha}")
       self.next()
 
   def parte_else(self):
