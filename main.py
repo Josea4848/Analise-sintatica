@@ -65,7 +65,9 @@ class Sintatico:
       self.erros.append(f"[{self.token.linha}] : expected")
     
   def lista_indentificadores(self):
-    if self.token.tipo == "id":
+    if self.token.tipo in ["id", "keyword"]:
+      if self.token.tipo == "keyword":
+        self.erros.append(f"{self.token.token} is a keyword, line {self.token.linha}")
       self.next()
       self.lista_indentificadores2()
 
@@ -76,7 +78,9 @@ class Sintatico:
     if self.token.token == ",":
       self.next()
       #se espera um id
-      if(self.token.tipo == "id"):
+      if self.token.tipo in ["id", "keyword"]:
+        if self.token.tipo == "keyword":
+          self.erros.append(f"{self.token.token} is a keyword, line {self.token.linha}")
         self.next()
         self.lista_indentificadores2()
       elif self.token.tipo != "nls":
@@ -98,8 +102,9 @@ class Sintatico:
       self.declaracao_de_subprograma()
       if self.token.token == ";":
         self.next()
-      elif self.token.tipo != "nls":
-        self.erros.append(f"; missing, line {self.tokens[self.posicao-1].linha}")
+      else:
+        self.erros.append("procedure: Expected ';' after end")
+
       self.declaracao_de_subprogramas()
 
   def declaracao_de_subprograma(self): #d_subprgm
@@ -107,7 +112,9 @@ class Sintatico:
       self.next()
     else:
       self.erros.append(f"ID inválido, {self.token.token}")
+    
     self.argumentos()
+    
     if self.token.token == ";":
       self.next()
     else:
@@ -121,12 +128,18 @@ class Sintatico:
   def argumentos(self):
     if self.token.token == "(":
       self.next()
-      self.lista_de_parametros()
 
-      if self.token.token == ")":
-        self.next()
-      elif self.token.tipo != "nls":
-        self.erros.append(") expected")
+      if self.token.token in ");":
+        if self.token.token == ";":
+          self.erros.append(f") expected, line {self.token.linha}")
+        else:
+          self.next()
+      else:
+        self.lista_de_parametros()
+        if self.token.token == ")":
+          self.next()
+        elif self.token.tipo != "nls":
+          self.erros.append(") expected")
 
     else:
       pass
@@ -169,11 +182,10 @@ class Sintatico:
     if self.token.token == "begin":
       self.next()
       self.comandos_opcionais()
-
       if self.token.token == "end":
         self.next()
       elif self.token.tipo != "nls":
-        self.erros.append(f"Expected end, line {self.token.linha}")
+        self.erros.append(f"Expected end, before {self.token.token}, line {self.token.linha}")
     elif self.token.tipo != "nls":
       self.erros.append(f"begin expected {self.token.linha}, but started with {self.token.token}")
 
@@ -196,7 +208,10 @@ class Sintatico:
       self.next()
       self.ativacao_de_procedimento()
     
-      if self.token.token == ":=":
+      if self.token.token in ":=":
+        if self.token.token != ":=":
+          self.erros.append(f"'{self.token.token}' line {self.token.linha}, use :=")
+        
         self.next() 
         self.expressao()
         if self.token.token == ";":
@@ -209,8 +224,10 @@ class Sintatico:
 
       elif self.token.tipo != "nls":
         self.erros.append(f"assignment error or procedure call after {self.tokens[self.posicao-1].token}, line {self.tokens[self.posicao-1].linha}")
+        if(self.tokens[self.posicao+1].token == ";"):
+          self.next()
+          self.next()
       
-
     elif self.token.token == "if":
       self.next()
       
@@ -225,7 +242,7 @@ class Sintatico:
       if self.token.token == "begin":
         self.comando_composto()
       else:
-        self.comandos_opcionais()
+        self.comando()
 
       self.parte_else()
 
