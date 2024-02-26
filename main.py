@@ -262,8 +262,11 @@ class Sintatico:
         self.erros.append("Identifier expected")
       
       #espera-se :=
-      if self.token.token == ":=":
+      if self.token.token in ":=":
+        if self.token.token != ":=":
+          self.erros.append(f"'{self.token.token}' line {self.token.linha}, use :=")
         self.next()
+
       elif self.token.tipo != "nls":
         self.erros.append(f":= expected, line {self.token.linha}")
 
